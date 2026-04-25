@@ -1,0 +1,27 @@
+vibe_coding:
+  # Vote threshold to show idea to author
+  vote_threshold: 3
+  # Bot nickname
+  bot_nick: "VibeTCoder"
+  # Time format for logging
+  time_format: "%Y-%m-%d %H:%M:%S"
+
+twitch:
+  # Channel to connect to
+  channel: "vibe_coder"
+  # IRC server (default: twitch)
+  irc_server: "irc.chat.twitch.tv"
+  # IRC port (default: 6667)
+  irc_port: 6667
+
+database:
+  # Path to SQLite database
+  path: "ideas.db"
+
+agent:
+  # File-based task queue
+  task_queue_path: "agent/task_queue.txt"
+  # Branch prefix
+  branch_prefix: "feature/twitch-idea-"
+  # Base branch
+  base_branch: "main"
