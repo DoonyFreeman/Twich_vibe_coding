@@ -5,6 +5,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Optional
 
 import typer
 from rich.console import Console
@@ -31,7 +32,7 @@ def get_db_path() -> Path:
 
 @app.command()
 def ideas(
-    status: str | None = typer.Option(
+    status: Optional[str] = typer.Option(
         None, "--status", "-s", help="Filter by status (pending/approved/rejected)"
     ),
     limit: int = typer.Option(
@@ -42,7 +43,7 @@ def ideas(
     asyncio.run(_list_ideas(status, limit))
 
 
-async def _list_ideas(status_filter: str | None, limit: int) -> None:
+async def _list_ideas(status_filter: Optional[str], limit: int) -> None:
     """Async implementation of list ideas command.
 
     Args:
@@ -154,7 +155,7 @@ async def _reject_idea(idea_id: int) -> None:
 
 @app.command()
 def pending(
-    threshold: int | None = typer.Option(
+    threshold: Optional[int] = typer.Option(
         None, "--threshold", "-t", help="Override vote threshold"
     ),
 ) -> None:
@@ -162,7 +163,7 @@ def pending(
     asyncio.run(_list_pending(threshold))
 
 
-async def _list_pending(threshold: int | None) -> None:
+async def _list_pending(threshold: Optional[int]) -> None:
     """Async implementation of pending command.
 
     Args:
