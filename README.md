@@ -34,7 +34,7 @@
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/YOUR_USERNAME/Twich_vibe_coding.git
+git clone https://github.com/DoonyFreeman/Twich_vibe_coding.git
 cd Twich_vibe_coding
 
 # Установить зависимости ( one command)
