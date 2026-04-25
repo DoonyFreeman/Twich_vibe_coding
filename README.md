@@ -1,205 +1,299 @@
 # Twitch Vibe Coding
 
-Система параллельных задач с approval-воркфлоу для стримов на Twitch.
+Система управления задачами для Twitch стримов с голосованием и автоматическим созданием Pull Requests.
 
-Зрители предлагают идеи в чате, голосуют за них, а ты (стример) утверждаешь идеи на выполнение. After approval, задача уходит в очередь и выполняется в отдельной ветке с автоматическим PR.
+## Зачем этот проект?
 
-## Быстрый старт (1 минута)
+Во время стрима зрители предлагают идеи для проекта — фичи, баг-фиксы, улучшения. Обычно ты (стример) должен:
+1. Следить за чатом
+2. Записывать идеи
+3. Решать какие делать, а какие нет
+4. Потом не забыть что хотели сделать
 
-```bash
-# 1. Клонировать и перейти в папку
-git clone <your-repo> && cd vibe_coding
+**Vibe Coding автоматизирует этот процесс:**
+- Зрители пишут `[IDEA]` в чате с описанием
+- Другие зрители голосуют `!vote +1` / `!vote -1`
+- Бот отслеживает голоса и когда набирается порог (по умолчанию 3) — сообщает тебе
+- Ты пише `!approve #1` чтобы одобрить
+- Бот создаёт branch, выполняет задачу, создаёт PR
 
-# 2. Запустить (ONE COMMAND)
-chmod +x init.sh && ./init.sh
-
-# 3. Отредактировать настройки
-nano .env        # Twitch credentials
-nano config.yaml # Ваш канал
-
-# 4. Запустить бота
-vibe run
-```
-
-Или ещё проще:
-
-```bash
-pip install -e . && vibe init
-```
+Всё что тебе нужно — написать одну команду в чате!
 
 ## Возможности
 
-- **Предложение идей** — зрители пишут `[IDEA]` в чате
-- **Голосование** — `!vote +1` / `!vote -1`
-- **Approval воркфлоу** — утверждение или отклонение идей
-- **Git интеграция** — автоматические branch → PR
-- **CLI управления** — управление очередью из терминала
+- **[IDEA] command** — зрители предлагают идеи в чате
+- **Голосование** — `!vote +1` / `!vote -1` от зрителей
+- **Approval workflow** — `!approve #N` / `!reject #N` от стримера
+- **Auto branch** — автоматическое создание git branch
+- **Auto PR** — автоматический Pull Request через gh CLI
+- **CLI управление** — `vibe ideas`, `vibe pending`, `vibe stats`
 
-## Установка
+## Быстрый старт (2 минуты)
 
-### Вариант 1: pip (рекомендуется)
+### Шаг 1: Скачай и установи
 
 ```bash
+# Клонировать репозиторий
+git clone https://github.com/YOUR_USERNAME/Twich_vibe_coding.git
+cd Twich_vibe_coding
+
+# Установить зависимости ( one command)
 pip install -e .
+```
+
+### Шаг 2: Создать конфигурацию
+
+```bash
+# Создаёт .env и config.yaml автоматически
 vibe init
 ```
 
-### Вариант 2: Скрипты
+### Шаг 3: Настроить Twitch
+
+Открой файл `.env` в любом редакторе:
 
 ```bash
-chmod +x init.sh && ./init.sh
+nano .env
 ```
 
-### Вариант 3: Вручную
+Добавь свои данные:
+
+```
+# Получить на https://twitchapps.com/kraken/
+TWITCH_OAUTH_TOKEN=oauth:xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWITCH_NICK=твой_никнейм
+```
+
+Открой `config.yaml`:
 
 ```bash
-pip install aiosqlite pyyaml typer python-dotenv rich
-python -c "from vibe_coding.cli.main import app; app(['init'])"
+nano config.yaml
 ```
 
-### Настройка .env
+Измени `channel` на название твоего канала:
 
-Получить токен: https://twitchapps.com/kraken/
+```yaml
+twitch:
+  channel: "твой_канал"
+```
+
+### Шаг 4: Запустить
 
 ```bash
-TWITCH_OAUTH_TOKEN=oauth:xxxxxxxxxxxx
-TWITCH_NICK=your_username
+vibe run
 ```
+
+Готово! Бот подключился к чату.
+
+## Подробная настройка
+
+### Получение Twitch OAuth Token
+
+1. Перейди на https://twitchapps.com/kraken/
+2. Нажми "Connect to Twitch"
+3. Разреши доступ
+4. Скопируй токен (начинается с `oauth:`)
+5. Вставь в `.env` как `TWITCH_OAUTH_TOKEN=oauth:xxxxxxxx`
+
+Важно: токен действует долго, но если бот отключится — получи новый.
 
 ### Настройка config.yaml
 
+Полный список опций:
+
 ```yaml
 vibe_coding:
-  vote_threshold: 3
+  vote_threshold: 3    # голосов для одобрения (можно изменить)
+  bot_nick: "VibeTCoder"  # ник бота
+  time_format: "%Y-%m-%d %H:%M:%S"
 
 twitch:
-  channel: "your_channel"
-```
+  channel: "твой_канал"       # НАЗВАНИЕ канала БЕЗ #
+  irc_server: "irc.chat.twitch.tv"
+  irc_port: 6667
 
-## Команды
+database:
+  path: "ideas.db"            # файл базы данных
+
+agent:
+  task_queue_path: "agent/task_queue.txt"
   branch_prefix: "feature/twitch-idea-"
   base_branch: "main"
-```
-
-### 4. Запуск бота
-
-```bash
-python -m vibe_coding.bot.listener
 ```
 
 ## Использование
 
 ### Команды для зрителей
 
-```
-[IDEA] Add dark mode, Complexity: M, Priority: high
-```
+Зритель хочет предложить идею:
 
 ```
-!vote #1 +1        # голосовать за
-!vote #1 -1        # против
-!list              # список идей
-!pending          # ожидающие
+[IDEA] Add dark mode to settings, Complexity: M, Priority: high
 ```
 
-### Команды для стримера (в чате)
+Бот ответит что идея создана и сколько голосов нужно.
+
+Зритель хочет проголосовать:
 
 ```
-!approve #1         # утвердить
-!reject #1          # отклонить
+!vote #1 +1    # голосует ЗА
+!vote #1 -1    # голосует ПРОТИВ
 ```
 
-### CLI команды
+Посмотреть список идей:
+
+```
+!list         # все идеи
+!pending    # только ожидающие
+```
+
+### Команды для стримера (в Twitch чате)
+
+```
+!approve #1    # одобрить идею #1 и добавить в очередь
+!reject #1     # отклонить идею #1
+```
+
+### CLI команды (в терминале)
 
 ```bash
-# Список всех идей
-vibe ideas
-
-# Список ожидающих
-vibe pending
-
-# Утвердить идею
-vibe approve 1
-
-# Отклонить идею
-vibe reject 1
-
-# Статистика
-vibe stats
+vibe ideas           # показать все идеи
+vibe ideas --status pending  # толькоpending
+vibe pending         # показать ожидающие (нужно 3+ голосов)
+vibe approve 1      # approve через CLI
+vibe reject 1       # reject через CLI
+vibe stats          # статистика: сколько всего, pending, approved и т.д.
 ```
 
-## Workflow
+## Workflow (как это работает)
 
 ```
-Зритель: [IDEA] Add dark mode, Complexity: M
-Зрители: !vote #1 +1 (нужно 3+ голосов)
-Бот: @username, idea #1 reached 3 votes! Type !approve #1 or !reject #1
-Стример: !approve #1
-Бот: Approved idea #1: Add dark mode
-       Adding to execution queue...
+1. Зритель пишет в чате:
+   [IDEA] Add dark mode, Complexity: M
 
-[Background Agent]
-→ Создаёт branch: feature/twitch-idea-1-add-dark-mode
-→ Выполняет задачу
-→ Создаёт PR через gh CLI
-→ Ждёт merge
-```
+2. Бот создаёт идею в базе, отвечает:
+   @username, idea #1 created! Need 3 votes to approve.
 
-## Установка CLI команды
+3. Зрители голосуют:
+   !vote #1 +1
+   !vote #1 +1
+   !vote #1 +1
 
-```bash
-# Добавить в PATH
-export PATH="$PATH:$(pwd)"
+4. Бот пишет когда набралось 3+ голосов:
+   @author, idea #1 reached 3 votes! Type !approve #1 or !reject #1
 
-# Или создать алиас в ~/.zshrc
-alias vibe='python -m vibe_coding.cli.main'
+5. Стример пишет:
+   !approve #1
+
+6. Бот одобряет и добавляет в очередь:
+   Approved idea #1: Add dark mode
+   Adding to execution queue...
+
+7. (Автоматически) Создаётся branch:
+   feature/twitch-idea-1-add-dark-mode
+
+8. (Автоматически) Выполняется задача
+   (пока не реализовано — ждёт Agent)
+
+9. (Автоматически) Создаётся PR через gh CLI
 ```
 
 ## Требования
 
-- Python 3.11+
-- Twitch аккаунт бота
-- gh CLI для PR (опционально)
+- **Python 3.11+** — проверь `python --version`
+- **Twitch аккаунт** — для бота нужен аккаунт
+- **gh CLI** (опционально) — для автоматических PR https://cli.github.com/
 
 ## Структура проекта
 
 ```
-vibe_coding/
-├── config.yaml          # Конфигурация
-├── .env                # Secrets (не коммитить)
-├── pyproject.toml
+Twich_vibe_coding/
+├── .env                    # Twitch credentials (НЕ коммитить!)
+├── config.yaml             # Настройки
+├── pyproject.toml         # Python пакет
+├── setup.py              # Установщик
+├── init.sh              # Скрипт быстрой установки
+├── run.sh              # Скрипт запуска
+├── README.md           # Этот файл
 ├── vibe_coding/
-│   ├── bot/           # Twitch бот
-│   │   ├── connection.py
-│   │   ├── parser.py
-│   │   └── handlers.py
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── config.py      # Загрузка конфигурации
+│   ├── agent_queue.py # Очередь задач
+│   ├── git_workflow.py # Git операции
+│   ├── bot/          # Twitch бот
+│   │   ├── connection.py  # IRC подключение
+│   │   ├── parser.py     # Парсинг сообщений
+│   │   └── handlers.py  # Обработчики команд
 │   ├── cli/          # CLI интерфейс
 │   │   └── main.py
-│   ├── db/           # База данных
-│   │   ├── schema.py
-│   │   ├── models.py
-│   │   └── repository.py
-│   ├── agent_queue.py # Очередь задач
-│   └── git_workflow.py # Git операции
-├── agent/
-│   └── task_queue.txt # Очередь задач
-└── tests/
+│   └── db/          # Ба��а данных
+│       ├── schema.py
+│       ├── models.py
+│       └── repository.py
+├── agent/           # Очередь задач для Agent
+│   └── task_queue.txt
+└── tests/           # Тесты
 ```
 
-## ЧаВо
+## Частые вопросы
 
-**Как получить Twitch OAuth токен?**
-→ https://twitchapps.com/kraken/
+**Бот не подключается к чату**
 
-**Как установить gh CLI?**
-→ https://cli.github.com/
-
-**Бот не подключается?**
-Проверь `.env` файл и убедись что токен валидный.
+Проверь:
+1. Правильный ли токен в `.env`? (начинается с `oauth:`)
+2. Правильный ли ник в `TWITCH_NICK`?
+3. Существует ли канал в `config.yaml`?
 
 **Как изменить порог голосов?**
-→ Измени `vote_threshold` в `config.yaml`
+
+Измени `vote_threshold` в `config.yaml`:
+```yaml
+vibe_coding:
+  vote_threshold: 5  # теперь нужно 5 голосов
+```
+
+**Как посмотреть все идеи?**
+
+```bash
+vibe ideas           # все
+vibe pending      # только ожидающие
+vibe stats        # статистика
+```
+
+**Можно ли использовать без Twitch?**
+
+Да! Базу данных и CLI можно использовать локально:
+```bash
+vibe ideas
+vibe approve 1
+vibe stats
+```
+
+**Нужен ли gh CLI для PR?**
+
+Нет, опционально. Без gh CLI задачи выполняются в branch, но PR нужно создавать вручную.
 
 ## Лицензия
 
-MIT
+MIT License
+
+Copyright (c) 2024 VibeCoder
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
