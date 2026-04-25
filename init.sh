@@ -1,10 +1,12 @@
 #!/bin/bash
 # Quick init script for Vibe Coding
 
+set -e
+
 echo "Initializing Vibe Coding..."
 
-# Install dependencies
-pip install -q aiosqlite pyyaml typer python-dotenv rich
+# Install dependencies and package (force reinstall to fix any cached issues)
+pip install -q -e .
 
 # Create config files
 python -c "from vibe_coding.cli.main import app; app(['init'])" 2>/dev/null || true
