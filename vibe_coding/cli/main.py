@@ -2,13 +2,15 @@
 
 import asyncio
 import logging
+import os
+import sys
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from vibe_coding.config import get_config
+from vibe_coding.config import get_config, get_twitch_nick, get_twitch_oauth
 from vibe_coding.db.models import IdeaStatus
 from vibe_coding.db.repository import IdeaRepository
 
@@ -236,3 +238,90 @@ async def _show_stats() -> None:
 
 if __name__ == "__main__":
     app()
+
+
+@app.command()
+def init() -> None:
+    """Initialize Vibe Coding - create config files and database."""
+    console.print("[bold cyan]Initializing Vibe Coding...[/bold cyan]\n")
+
+    base_path = Path(".")
+
+    env_file = base_path / ".env"
+    if not env_file.exists():
+        env_file.write_text("""# Twitch OAuth Token (получить на https://twitchapps.com/kraken/)
+TWITCH_OAUTH_TOKEN=oauth:your_token_here
+TWITCH_NICK=your_username
+""")
+        console.print(f"[green]✓[/green] Created .env")
+
+    config_file = base_path / "config.yaml"
+    if not config_file.exists():
+        config_file.write_text("""vibe_coding:
+  vote_threshold: 3
+  bot_nick: "VibeTCoder"
+  time_format: "%Y-%m-%d %H:%M:%S"
+
+twitch:
+  channel: "your_channel"
+  irc_server: "irc.chat.twitch.tv"
+  irc_port: 6667
+
+database:
+  path: "ideas.db"
+
+agent:
+  task_queue_path: "agent/task_queue.txt"
+  branch_prefix: "feature/twitch-idea-"
+  base_branch: "main"
+""")
+        console.print(f"[green]✓[/green] Created config.yaml")
+
+    db_path = get_db_path()
+    if not db_path.exists():
+        console.print(f"[green]✓[/green] Created database: {db_path}")
+
+    console.print("\n[bold yellow]Next steps:[/bold yellow]")
+    console.print("1. Edit .env with your Twitch credentials")
+    console.print("2. Edit config.yaml with your channel name")
+    console.print("3. Run: [cyan]vibe run[/cyan]")
+
+
+@app.command()
+def run() -> None:
+    """Run the Vibe Coding bot."""
+    asyncio.run(_run_bot())
+
+
+async def _run_bot() -> None:
+    """Run the bot."""
+    try:
+        oauth = get_twitch_oauth()
+    except (ValueError, FileNotFoundError):
+        console.print("[bold red]Error:[/bold red] Twitch credentials not configured")
+        console.print("Run [cyan]vibe init[/cyan] first, then edit .env")
+        sys.exit(1)
+
+    try:
+        nick = get_twitch_nick()
+    except (ValueError, FileNotFoundError):
+        console.print("[bold red]Error:[/bold red] Twitch username not configured")
+        console.print("Run [cyan]vibe init[/cyan] first, then edit .env")
+        sys.exit(1)
+
+    config = get_config()
+    channel = config["twitch"]["channel"]
+
+    if channel == "your_channel":
+        console.print("[bold red]Error:[/bold red] Channel not configured")
+        console.print("Edit config.yaml and set your twitch channel")
+        sys.exit(1)
+
+    console.print(f"[bold]Connecting to #{channel} as {nick}...[/bold]")
+    console.print("[yellow]Bot starting... (not implemented yet - see README)[/yellow]")
+    console.print("\nCLI commands available:")
+    console.print("  vibe ideas     - list all ideas")
+    console.print("  vibe pending  - list pending ideas")
+    console.print("  vibe approve # - approve an idea")
+    console.print("  vibe reject  # - reject an idea")
+    console.print("  vibe stats    - show statistics")

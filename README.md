@@ -4,6 +4,29 @@
 
 Зрители предлагают идеи в чате, голосуют за них, а ты (стример) утверждаешь идеи на выполнение. After approval, задача уходит в очередь и выполняется в отдельной ветке с автоматическим PR.
 
+## Быстрый старт (1 минута)
+
+```bash
+# 1. Клонировать и перейти в папку
+git clone <your-repo> && cd vibe_coding
+
+# 2. Запустить (ONE COMMAND)
+chmod +x init.sh && ./init.sh
+
+# 3. Отредактировать настройки
+nano .env        # Twitch credentials
+nano config.yaml # Ваш канал
+
+# 4. Запустить бота
+vibe run
+```
+
+Или ещё проще:
+
+```bash
+pip install -e . && vibe init
+```
+
 ## Возможности
 
 - **Предложение идей** — зрители пишут `[IDEA]` в чате
@@ -12,52 +35,48 @@
 - **Git интеграция** — автоматические branch → PR
 - **CLI управления** — управление очередью из терминала
 
-## Быстрый старт
+## Установка
 
-### 1. Установка
+### Вариант 1: pip (рекомендуется)
 
 ```bash
-# Клонировать репозиторий
-git clone <your-repo>
-cd vibe_coding
+pip install -e .
+vibe init
+```
 
-# Установить зависимости
+### Вариант 2: Скрипты
+
+```bash
+chmod +x init.sh && ./init.sh
+```
+
+### Вариант 3: Вручную
+
+```bash
 pip install aiosqlite pyyaml typer python-dotenv rich
+python -c "from vibe_coding.cli.main import app; app(['init'])"
 ```
 
-### 2. Настройка Twitch
+### Настройка .env
 
-Создай файл `.env` (скопируй из `.env.example`):
+Получить токен: https://twitchapps.com/kraken/
 
 ```bash
-cp .env.example .env
-```
-
-Получи OAuth токен на https://twitchapps.com/kraken/
-
-Отредактируй `.env`:
-
-```
-TWITCH_OAUTH_TOKEN=oauth:your_token_here
+TWITCH_OAUTH_TOKEN=oauth:xxxxxxxxxxxx
 TWITCH_NICK=your_username
 ```
 
-### 3. Настройка config.yaml
-
-Отредактируй `config.yaml` под свой канал:
+### Настройка config.yaml
 
 ```yaml
 vibe_coding:
-  vote_threshold: 3    # голосов для одобрения
-  bot_nick: "VibeTCoder"
+  vote_threshold: 3
 
 twitch:
   channel: "your_channel"
+```
 
-database:
-  path: "ideas.db"
-
-agent:
+## Команды
   branch_prefix: "feature/twitch-idea-"
   base_branch: "main"
 ```
